@@ -105,8 +105,8 @@ func (c *Client) Close() error {
 }
 
 // Cmd create a command on client
-func (c *Client) Cmd(cmd string) *remoteScript {
-	return &remoteScript{
+func (c *Client) Cmd(cmd string) *RemoteScript {
+	return &RemoteScript{
 		_type:  cmdLine,
 		client: c.client,
 		script: bytes.NewBufferString(cmd + "\n"),
@@ -114,8 +114,8 @@ func (c *Client) Cmd(cmd string) *remoteScript {
 }
 
 // Script
-func (c *Client) Script(script string) *remoteScript {
-	return &remoteScript{
+func (c *Client) Script(script string) *RemoteScript {
+	return &RemoteScript{
 		_type:  rawScript,
 		client: c.client,
 		script: bytes.NewBufferString(script + "\n"),
@@ -123,15 +123,16 @@ func (c *Client) Script(script string) *remoteScript {
 }
 
 // ScriptFile
-func (c *Client) ScriptFile(fname string) *remoteScript {
-	return &remoteScript{
+func (c *Client) ScriptFile(fname string) *RemoteScript {
+	return &RemoteScript{
 		_type:      scriptFile,
 		client:     c.client,
 		scriptFile: fname,
 	}
 }
 
-type remoteScript struct {
+// RemoteScript
+type RemoteScript struct {
 	client     *ssh.Client
 	_type      remoteScriptType
 	script     *bytes.Buffer
@@ -143,7 +144,7 @@ type remoteScript struct {
 }
 
 // Run
-func (rs *remoteScript) Run() error {
+func (rs *RemoteScript) Run() error {
 	if rs.err != nil {
 		fmt.Println(rs.err)
 		return rs.err
@@ -156,11 +157,11 @@ func (rs *remoteScript) Run() error {
 	} else if rs._type == scriptFile {
 		return rs.runScriptFile()
 	} else {
-		return errors.New("Not supported remoteScript type")
+		return errors.New("Not supported RemoteScript type")
 	}
 }
 
-func (rs *remoteScript) Output() ([]byte, error) {
+func (rs *RemoteScript) Output() ([]byte, error) {
 	if rs.stdout != nil {
 		return nil, errors.New("Stdout already set")
 	}
@@ -170,7 +171,7 @@ func (rs *remoteScript) Output() ([]byte, error) {
 	return out.Bytes(), err
 }
 
-func (rs *remoteScript) SmartOutput() ([]byte, error) {
+func (rs *RemoteScript) SmartOutput() ([]byte, error) {
 	if rs.stdout != nil {
 		return nil, errors.New("Stdout already set")
 	}
@@ -191,7 +192,7 @@ func (rs *remoteScript) SmartOutput() ([]byte, error) {
 	return stdout.Bytes(), err
 }
 
-func (rs *remoteScript) Cmd(cmd string) *remoteScript {
+func (rs *RemoteScript) Cmd(cmd string) *RemoteScript {
 	_, err := rs.script.WriteString(cmd + "\n")
 	if err != nil {
 		rs.err = err
@@ -199,13 +200,13 @@ func (rs *remoteScript) Cmd(cmd string) *remoteScript {
 	return rs
 }
 
-func (rs *remoteScript) SetStdio(stdout, stderr io.Writer) *remoteScript {
+func (rs *RemoteScript) SetStdio(stdout, stderr io.Writer) *RemoteScript {
 	rs.stdout = stdout
 	rs.stderr = stderr
 	return rs
 }
 
-func (rs *remoteScript) runCmd(cmd string) error {
+func (rs *RemoteScript) runCmd(cmd string) error {
 	session, err := rs.client.NewSession()
 	if err != nil {
 		return err
@@ -221,7 +222,7 @@ func (rs *remoteScript) runCmd(cmd string) error {
 	return nil
 }
 
-func (rs *remoteScript) runCmds() error {
+func (rs *RemoteScript) runCmds() error {
 	for {
 		statment, err := rs.script.ReadString('\n')
 		if err == io.EOF {
@@ -239,7 +240,7 @@ func (rs *remoteScript) runCmds() error {
 	return nil
 }
 
-func (rs *remoteScript) runScript() error {
+func (rs *RemoteScript) runScript() error {
 	session, err := rs.client.NewSession()
 	if err != nil {
 		return err
@@ -259,7 +260,7 @@ func (rs *remoteScript) runScript() error {
 	return nil
 }
 
-func (rs *remoteScript) runScriptFile() error {
+func (rs *RemoteScript) runScriptFile() error {
 	var buffer bytes.Buffer
 	file, err := os.Open(rs.scriptFile)
 	if err != nil {
